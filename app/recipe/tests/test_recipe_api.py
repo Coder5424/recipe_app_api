@@ -241,7 +241,7 @@ class PrivateRecipeAPITests(TestCase):
                 {'name': 'tag2'}
             ]
         }
-        res = self.client.post(RECIPES_URL, payload)
+        res = self.client.post(RECIPES_URL, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
@@ -270,7 +270,7 @@ class PrivateRecipeAPITests(TestCase):
                 {'name': 'Other'}
             ]
         }
-        res = self.client.post(RECIPES_URL, payload)
+        res = self.client.post(RECIPES_URL, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
