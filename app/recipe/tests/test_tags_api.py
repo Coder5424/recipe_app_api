@@ -6,8 +6,12 @@ from django.urls import reverse
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
-from core.models import Tag
+from core.models import (
+    Tag,
+    Recipe,
+)
 from recipe.serializers import TagSerializer
+from decimal import Decimal
 
 
 TAGS_URL = reverse('recipe:tag-list')
@@ -105,6 +109,63 @@ class PrivateTagsAPITests(TestCase):
         self.assertFalse(
             Tag.objects.filter(user=self.user).exists()
         )
+
+    def test_filter_tags_assigned_recipes(self):
+        """Test listing tags assigned to recipes"""
+        tag1 = Tag.objects.create(user=self.user, name='tag 1')
+        tag2 = Tag.objects.create(user=self.user, name='tag 2')
+
+        recipe = Recipe.objects.create(
+            title='Default Name',
+            time_minutes=22,
+            price=Decimal('5.25'),
+            user=self.user,
+        )
+        recipe.tags.add(tag1)
+
+        res = self.client.get(
+            TAGS_URL,
+            {'assigned_only': 1}
+        )
+
+        ser1 = TagSerializer(tag1)
+        ser2 = TagSerializer(tag2)
+
+        self.assertIn(ser1.data, res.data)
+        self.assertNotIn(ser2.data, res.data)
+
+    def test_filtered_tags_unique(self):
+        """Test filtered tags returns unique list"""
+        tag = Tag.objects.create(user=self.user, name='tag 1')
+        Tag.objects.create(user=self.user, name='tag 2')
+
+        recipe1 = Recipe.objects.create(
+            title='Recipe 1',
+            time_minutes=22,
+            price=Decimal('5.25'),
+            user=self.user,
+        )
+        recipe2 = Recipe.objects.create(
+            title='Recipe 2',
+            time_minutes=22,
+            price=Decimal('5.25'),
+            user=self.user,
+        )
+        recipe1.tags.add(tag)
+        recipe2.tags.add(tag)
+
+        ser = TagSerializer(tag)
+
+        res = self.client.get(
+            TAGS_URL,
+            {'assigned_only': 1}
+        )
+
+        self.assertEqual(
+            len(res.data),
+            1
+        )
+        self.assertIn(ser.data, res.data)
 
 
 
